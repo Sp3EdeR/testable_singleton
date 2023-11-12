@@ -30,3 +30,11 @@
 *.exe
 *.out
 *.app
+
+# GNU
+build*
+
+# MSVC
+out
+.vs
+CppProperties.json
