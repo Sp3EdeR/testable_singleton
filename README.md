@@ -1,3 +1,5 @@
+[![unit test status](https://github.com/Sp3EdeR/testable_singleton/actions/workflows/Tests.yml/badge.svg?branch=main)](https://github.com/Sp3EdeR/testable_singleton/actions/workflows/Tests.yml?query=branch%3Amain)
+
 # Testable Singleton
 This header-only C++ library implements the [Singleton pattern](https://en.wikipedia.org/wiki/Singleton_pattern) in a thread-safe and efficient way.
 

@@ -1,0 +1,66 @@
+# This action builds and runs CTest tests
+
+name: testable_singleton unit tests
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+  workflow_dispatch: # Manual execution
+jobs:
+  test-ubuntu-gcc-latest:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4.1.1
+      with:
+        submodules: true
+    - name: Configure and build the project
+      uses: threeal/cmake-action@v1.3.0
+      with:
+        run-build: true
+        run-test: true
+        options: CMAKE_BUILD_TYPE=Release
+        test-args: -V
+  test-ubuntu-clang-latest:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4.1.1
+      with:
+        submodules: true
+    - name: Configure and build the project
+      uses: threeal/cmake-action@v1.3.0
+      with:
+        run-build: true
+        run-test: true
+        options: CMAKE_BUILD_TYPE=Debug
+        test-args: -V
+        c-compiler: clang
+        cxx-compiler: clang++
+  test-windows-latest:
+    runs-on: windows-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4.1.1
+      with:
+        submodules: true
+    - name: Configure and build the project
+      uses: threeal/cmake-action@v1.3.0
+      with:
+        run-build: true
+        run-test: true
+        options: CMAKE_BUILD_TYPE=Debug
+        test-args: -C Debug -V
+  test-macos-latest:
+    runs-on: macos-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4.1.1
+      with:
+        submodules: true
+    - name: Configure and build the project
+      uses: threeal/cmake-action@v1.3.0
+      with:
+        run-build: true
+        run-test: true
+        test-args: -V
