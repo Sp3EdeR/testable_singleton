@@ -9,10 +9,8 @@ target_include_directories(
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
 )
-set_target_properties(
-    singleton PROPERTIES
-    CXX_STANDARD 11 CXX_STANDARD_REQUIRED TRUE
-)
+target_compile_features(singleton INTERFACE cxx_std_11)
+
 # Standard C++ mutex depends on pthread on Unix.
 if (UNIX)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
