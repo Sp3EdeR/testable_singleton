@@ -150,7 +150,10 @@ private:
       */
     static void Inject(T* object)
     {
-        std::call_once(g_onceFlag, []() {});
+        if (object)
+            std::call_once(g_onceFlag, []() {});
+        else
+            g_onceFlag.Reset();
         g_instance.SetExtern(object);
     }
 };
