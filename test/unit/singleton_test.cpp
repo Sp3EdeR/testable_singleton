@@ -313,6 +313,43 @@ TEST_F(CtorSingletonTest3, DestructionOnInject)
 	EXPECT_NE(pSingletonInstance, &instance2);
 }
 
+// Scenario: When injecting a nullptr mocked instance, the following Get reconstructs the instance.
+
+using CtorSingletonTest4 = CtorSingletonTest<4>;
+using CtorSingletonType4 = CtorSingletonTest4::SingletonType;
+ACCESS_PRIVATE_STATIC_FUN(CtorSingletonType4, void(CtorSingletonType4*), Inject);
+
+TEST_F(CtorSingletonTest4, ReconstructionAfterNullInject)
+{
+	void* pSingletonInstance = nullptr;
+	void* pNewSingletonInstance = nullptr;
+	Sequence seq;
+	EXPECT_CALL(*g_pMock, Constructed(_))
+		.Times(1)
+		.InSequence(seq)
+		.WillOnce(SaveArg<0>(&pSingletonInstance));
+	EXPECT_CALL(*g_pMock, Destructed(Eq(ByRef(pSingletonInstance))))
+		.Times(1)
+		.InSequence(seq);
+	EXPECT_CALL(*g_pMock, Constructed(_))
+		.Times(1)
+		.InSequence(seq)
+		.WillOnce(SaveArg<0>(&pNewSingletonInstance));
+
+	auto& instance1 = CtorMockedSingleton<&GetMock>::Get();
+
+	EXPECT_NE(pSingletonInstance, nullptr);
+	EXPECT_EQ(pSingletonInstance, &instance1);
+
+	// Destroy the first instance
+	call_private_static::CtorSingletonType4::Inject(nullptr);
+
+	auto& instance2 = CtorMockedSingleton<&GetMock>::Get();
+
+	EXPECT_EQ(pSingletonInstance, pNewSingletonInstance);
+	EXPECT_EQ(pNewSingletonInstance, &instance2);
+}
+
 // Scenario group: Injected instances are not destroyed on Reset and Inject.
 
 // Scenario: A singleton that has an injected instance does not destroy it on Inject.
