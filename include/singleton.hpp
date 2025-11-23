@@ -175,6 +175,7 @@ T* const SingletonInstance<T, SingletonType::STATIC>::LOCAL_INSTANCE_ID = reinte
 
 // Load time singleton impl:
 // Some details:
+// This is platform specific:
 // The instance is created at first use as usual, but not as a static variable
 // but on the heap. Its deleter function is saved to a global registry, in reverse order of creation.
 // With the help of GCC's attribute((destructor)) (Clang compatible), the destroy functions
@@ -183,6 +184,7 @@ T* const SingletonInstance<T, SingletonType::STATIC>::LOCAL_INSTANCE_ID = reinte
 using DeleteLoadTimeSingletonFunc = void (*)();
 
 struct LoadTimeSingletonEntry {
+    bool m_isValid = true; // To delete or not (to avoid double free between Reset and __attribute__(destructor))
     DeleteLoadTimeSingletonFunc m_deleteFunc;
     LoadTimeSingletonEntry* m_next;
 };
@@ -219,7 +221,8 @@ inline void __attribute__((destructor)) DestroyLoadTimeSingletons()
 {
     // memory safety is no concern here
     for (auto entry = LoadTimeSingletonEntryStack().load(); entry != nullptr; entry = entry->m_next) {
-        entry->m_deleteFunc();
+        if (entry->m_isValid)
+            entry->m_deleteFunc();
     }
 }
 
@@ -228,7 +231,7 @@ inline void __attribute__((destructor)) DestroyLoadTimeSingletons()
 // however it has no custom dtor (as that would violate trivial destructibility)
 template <typename T> struct SingletonInstance<T, SingletonType::LOAD_TIME> {
     operator T*() { return m_pExtern == LOCAL_INSTANCE_ID ? g_pInternal : m_pExtern; }
-    template <typename... Args> void Emplace(Args&&... args)
+    template <typename... Args> void Emplace(Args... args)
     {
         Reset();
         CreateInternalInstance(std::forward<Args>(args)...);
@@ -252,8 +255,13 @@ private:
     template <typename... Args> static void CreateInternalInstance(Args&&... args)
     {
         g_pInternal = new T(std::forward<Args>(args)...);
+        g_entry.m_isValid = true;
     }
-    static void DestroyInternalInstance() { delete std::exchange(g_pInternal, nullptr); }
+    static void DestroyInternalInstance()
+    {
+        delete std::exchange(g_pInternal, nullptr);
+        g_entry.m_isValid = false;
+    }
 
     static T* const LOCAL_INSTANCE_ID;
     T* m_pExtern = nullptr;
@@ -261,6 +269,11 @@ private:
     static LoadTimeSingletonEntry g_entry;
     // we know scalar types are trivially destructible, but add check for intent
     static_assert(std::is_trivially_destructible_v<T*>);
+
+// Extra work required to make it platform independent, for now:
+#if !defined(__GNUC__) && !defined(__clang__)
+#error "LOAD_TIME singletons require GCC or Clang (uses __attribute__((destructor)))"
+#endif
 };
 
 template <typename T>
@@ -268,7 +281,7 @@ T* const SingletonInstance<T, SingletonType::LOAD_TIME>::LOCAL_INSTANCE_ID = rei
 template <typename T> T* SingletonInstance<T, SingletonType::LOAD_TIME>::g_pInternal = nullptr;
 template <typename T>
 LoadTimeSingletonEntry SingletonInstance<T, SingletonType::LOAD_TIME>::g_entry
-    = { SingletonInstance<T, SingletonType::LOAD_TIME>::DestroyInternalInstance, nullptr };
+    = { false, SingletonInstance<T, SingletonType::LOAD_TIME>::DestroyInternalInstance, nullptr };
 
 } // namespace Detail
 
