@@ -231,7 +231,7 @@ template <typename T> struct SingletonInstance<T, SingletonType::LOAD_TIME> {
     template <typename... Args> void Emplace(Args&&... args)
     {
         Reset();
-        CreateInternalInstance();
+        CreateInternalInstance(std::forward<Args>(args)...);
         RegisterLoadTimeSingleton(&g_entry);
         m_pExtern = LOCAL_INSTANCE_ID;
     }
@@ -249,7 +249,10 @@ private:
             DestroyInternalInstance();
     }
     // Manage internal instance on heap:
-    static void CreateInternalInstance() { g_pInternal = new T(); }
+    template <typename... Args> static void CreateInternalInstance(Args&&... args)
+    {
+        g_pInternal = new T(std::forward<Args>(args)...);
+    }
     static void DestroyInternalInstance() { delete std::exchange(g_pInternal, nullptr); }
 
     static T* const LOCAL_INSTANCE_ID;
