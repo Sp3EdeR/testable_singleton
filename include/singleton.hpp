@@ -6,12 +6,21 @@
 #include <type_traits>
 #include <utility>
 
+// More effort would be required to make load-time singletons work on MSVC
+#if defined(__GNUC__) || defined(__clang__)
+#define ENABLE_LOAD_TIME_SINGLETON 1
+#else
+#define ENABLE_LOAD_TIME_SINGLETON 0
+#endif
+
 /// This file implements the singleton pattern, but makes unit testing easy.
 
 // Types of singletons:
 enum class SingletonType : int32_t {
     // default case, 99% of the time this is enough
-    STATIC,
+    STATIC
+#if ENABLE_LOAD_TIME_SINGLETON
+    ,
     // Some notes:
     // Static instances don't always play nice with process termination:
     // Problem with atexit handlers:
@@ -26,6 +35,7 @@ enum class SingletonType : int32_t {
     // - However, its destruction is deferred until "unload time", when your library is unloaded,
     //   or if linked statically during process termination, but after static destruction phase.
     LOAD_TIME
+#endif // ENABLE_LOAD_TIME_SINGLETON
 };
 
 // fw declare some dependencies
@@ -71,9 +81,11 @@ protected:
 
 private:
     using Instance = Detail::SingletonInstance<T, type>;
+#if ENABLE_LOAD_TIME_SINGLETON
     // just here to catch future regressions
     static_assert(type != SingletonType::LOAD_TIME || std::is_trivially_destructible_v<Instance>,
         "Load-time singletons must be trivially destructible");
+#endif // ENABLE_LOAD_TIME_SINGLETON
 
     Singleton(const Singleton&) = delete;
     Singleton& operator=(const Singleton&) = delete;
@@ -173,6 +185,7 @@ private:
 template <typename T>
 T* const SingletonInstance<T, SingletonType::STATIC>::LOCAL_INSTANCE_ID = reinterpret_cast<T*>(0x1);
 
+#if ENABLE_LOAD_TIME_SINGLETON
 // Load time singleton impl:
 // Some details:
 // This is platform specific:
@@ -269,11 +282,6 @@ private:
     static LoadTimeSingletonEntry g_entry;
     // we know scalar types are trivially destructible, but add check for intent
     static_assert(std::is_trivially_destructible_v<T*>);
-
-// Extra work required to make it platform independent, for now:
-#if !defined(__GNUC__) && !defined(__clang__)
-#error "LOAD_TIME singletons require GCC or Clang (uses __attribute__((destructor)))"
-#endif
 };
 
 template <typename T>
@@ -282,6 +290,7 @@ template <typename T> T* SingletonInstance<T, SingletonType::LOAD_TIME>::g_pInte
 template <typename T>
 LoadTimeSingletonEntry SingletonInstance<T, SingletonType::LOAD_TIME>::g_entry
     = { false, SingletonInstance<T, SingletonType::LOAD_TIME>::DestroyInternalInstance, nullptr };
+#endif // ENABLE_LOAD_TIME_SINGLETON
 
 } // namespace Detail
 
