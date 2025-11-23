@@ -7,11 +7,13 @@
 #include <utility>
 
 // More effort would be required to make load-time singletons work on MSVC
+#ifndef ENABLE_LOAD_TIME_SINGLETON
 #if defined(__GNUC__) || defined(__clang__)
 #define ENABLE_LOAD_TIME_SINGLETON 1
 #else
 #define ENABLE_LOAD_TIME_SINGLETON 0
 #endif
+#endif // ENABLE_LOAD_TIME_SINGLETON
 
 /// This file implements the singleton pattern, but makes unit testing easy.
 
