@@ -231,7 +231,7 @@ inline void __attribute__((destructor)) DestroyLoadTimeSingletons()
 // however it has no custom dtor (as that would violate trivial destructibility)
 template <typename T> struct SingletonInstance<T, SingletonType::LOAD_TIME> {
     operator T*() { return m_pExtern == LOCAL_INSTANCE_ID ? g_pInternal : m_pExtern; }
-    template <typename... Args> void Emplace(Args... args)
+    template <typename... Args> void Emplace(Args&&... args)
     {
         Reset();
         CreateInternalInstance(std::forward<Args>(args)...);
