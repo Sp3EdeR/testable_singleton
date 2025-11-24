@@ -6,9 +6,13 @@
 #include <type_traits>
 #include <utility>
 
-// More effort would be required to make load-time singletons work on MSVC
 #ifndef ENABLE_LOAD_TIME_SINGLETON
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(__GNUC__)    || \
+    defined(__clang__)   || \
+    defined(__MINGW32__) || \
+    defined(__MINGW64__) || \
+    defined(__CYGWIN__)  || \
+    defined(_MSC_VER)
 #define ENABLE_LOAD_TIME_SINGLETON 1
 #else
 #define ENABLE_LOAD_TIME_SINGLETON 0
@@ -146,8 +150,9 @@ inline void RegisterLoadTimeSingleton(LoadTimeSingletonEntry* entry)
         entry->m_next, entry, std::memory_order_release, std::memory_order_relaxed))
         ;
 }
-// attribute destructor to make sure its run after static destruction phase
-inline void __attribute__((destructor)) DestroyLoadTimeSingletons()
+
+// - Platform independent part: delete in reverse order
+inline void DestroyLoadTimeSingletons()
 {
     // memory safety is no concern here
     for (auto entry = LoadTimeSingletonEntryStack().load(); entry != nullptr; entry = entry->m_next) {
@@ -155,6 +160,23 @@ inline void __attribute__((destructor)) DestroyLoadTimeSingletons()
             entry->m_deleteFunc();
     }
 }
+
+#if defined(_MSC_VER)
+// MSVC: Use .CRT$XPU section for late destruction
+typedef void (__cdecl *_PVFV)(void);
+static void __cdecl DeinitializeLoadTimeSingletons()
+{
+    DestroyLoadTimeSingletons();
+}
+#pragma section(".CRT$XPU", long, read)
+__declspec(allocate(".CRT$XPU")) _PVFV p_deinit = DeinitializeLoadTimeSingletons;
+#else
+// GCC/Clang/CYGWIN/MINGW: Use __attribute__((destructor))
+inline void __attribute__((destructor)) DeinitializeLoadTimeSingletons()
+{
+    DestroyLoadTimeSingletons();
+}
+#endif
 
 // Load-time singleton specialization
 // API is compatible with static singleton specialization
