@@ -100,7 +100,7 @@ private:
 };
 
 template <typename T>
-T* const SingletonInstance<T, SingletonType::STATIC>::LOCAL_INSTANCE_ID = reinterpret_cast<T*>(0x1);
+T* const SingletonInstance<T, SingletonType::STATIC>::LOCAL_INSTANCE_ID = reinterpret_cast<T*>(1);
 
 #if ENABLE_LOAD_TIME_SINGLETON
 // Load time singleton impl:
@@ -216,7 +216,7 @@ private:
 };
 
 template <typename T>
-T* const SingletonInstance<T, SingletonType::LOAD_TIME>::LOCAL_INSTANCE_ID = reinterpret_cast<T*>(0x1);
+T* const SingletonInstance<T, SingletonType::LOAD_TIME>::LOCAL_INSTANCE_ID = reinterpret_cast<T*>(1);
 template <typename T>
 T* SingletonInstance<T, SingletonType::LOAD_TIME>::g_pInternal = nullptr;
 template <typename T>
