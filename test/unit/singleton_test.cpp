@@ -50,7 +50,7 @@ protected:
 	friend BaseType;
 };
 constexpr double CustomCtorSingleton::INITIAL_VALUE;
-ACCESS_PRIVATE_STATIC_FUN(CustomCtorSingleton, CustomCtorSingleton& (const char*, int), Reset);
+ACCESS_PRIVATE_STATIC_FUN(CustomCtorSingleton, CustomCtorSingleton& (const char*&&, int&&), Reset);
 
 TEST(BasicSingletonTest, CustomCtorAndReset)
 {
@@ -73,6 +73,41 @@ TEST(BasicSingletonTest, CustomCtorAndReset)
 	EXPECT_EQ(inst2.GetValue2(), 0123);
 	EXPECT_EQ(inst2.m_value3, CustomCtorSingleton::INITIAL_VALUE);
 	EXPECT_EQ(inst2.GetValue3(), CustomCtorSingleton::INITIAL_VALUE);
+}
+
+// Scenario: Singleton with constructor that has copy-only and move-only parameters.
+
+struct CopyOnlyType
+{
+	CopyOnlyType() = default;
+	CopyOnlyType(const CopyOnlyType&) = default;
+	CopyOnlyType& operator =(const CopyOnlyType&) = default;
+};
+
+struct MoveOnlyType
+{
+	MoveOnlyType() = default;
+	MoveOnlyType(const MoveOnlyType&) = delete;
+	MoveOnlyType(MoveOnlyType&&) = default;
+	MoveOnlyType& operator =(const MoveOnlyType&) = delete;
+	MoveOnlyType& operator =(MoveOnlyType&&) = default;
+};
+
+struct SpecialParamCtorSingleton : Singleton<SpecialParamCtorSingleton>
+{
+protected:
+	SpecialParamCtorSingleton(CopyOnlyType arg1, MoveOnlyType&& arg2) { }
+	friend BaseType;
+};
+ACCESS_PRIVATE_STATIC_FUN(SpecialParamCtorSingleton, SpecialParamCtorSingleton& (CopyOnlyType&&, MoveOnlyType&&), Reset);
+
+TEST(BasicSingletonTest, SpecialParamCtorAndReset)
+{
+	// First instantiation with test arguments
+	auto& inst1 = SpecialParamCtorSingleton::Get(CopyOnlyType(), MoveOnlyType());
+
+	// Re-instantiation with different test arguments
+	auto& inst2 = call_private_static::SpecialParamCtorSingleton::Reset(CopyOnlyType(), MoveOnlyType());
 }
 
 // Scenario: The `TryGet()` function returns `nullptr` for an uninitialized singleton.

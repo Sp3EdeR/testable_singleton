@@ -128,6 +128,20 @@ int main()
 }
 ```
 
-@note To be able to properly use the `Inject` function, the production code should not cache a reference or pointer to the returned instance. Otherwise the injected mock doesn't take effect and the real instance is used, which is destroyed. This may cause a crash or an other memory corruption style issue.
+> [!TIP]
+> When the Singleton has a non-trivial constructor, and the `Reset` function is accessed, then each parameter type must be an r-value reference. For example if `MySingleton`'s constructor is:
+>
+> ```.cpp
+> MySingleton::MySingleton(FooType arg1, BarType&& arg2);
+> ```
+>
+> Then the `Reset` function's signature is:
+>
+> ```.cpp
+> MySingleton& MySingleton::Reset(FooType&&, BarType&&);
+> ```
+
+> [!NOTE]
+> To be able to properly use the `Inject` function, the production code should not cache a reference or pointer to the returned instance. Otherwise the injected mock doesn't take effect and the real instance is used, which is destroyed. This may cause a crash or an other memory corruption style issue.
 
 For more examples and "requirements", it is recommended to view this library's [test code](blob/main/test/unit/singleton_test.cpp).
