@@ -17,25 +17,33 @@
 #endif
 #endif // ENABLE_LOAD_TIME_SINGLETON
 
-// Types of singletons:
+/**
+ * @brief Types of singletons
+ */
 enum class SingletonType : int32_t {
-    // default case, 99% of the time this is enough
+    /**
+     * @brief Default case, 99% of the time this is enough
+     */
     STATIC
 #if ENABLE_LOAD_TIME_SINGLETON
     ,
-    // Some notes:
-    // Static instances don't always play nice with process termination:
-    // Problem with atexit handlers:
-    // - When a static instance is created (e.g. meyers singleton at first use) after
-    //   the atexit handler is registered, then by the time the atexit handler runs,
-    //   this static instance has already been destroyed.
-    // - This is not a problem if the static instance is created before the atexit handler
-    //   is registered, but when your library is used by some third party or customer processes,
-    //   you cannot rely on this.
-    // So a singleton type created with this LOAD_TIME parameter provides an alternative:
-    // - The instance is created at first use as usual.
-    // - However, its destruction is deferred until "unload time", when your library is unloaded,
-    //   or if linked statically during process termination, but after static destruction phase.
+    /**
+     * @brief Load-time singleton: use for singleton that must outlive static destruction phase.
+     *
+     * @note
+     * Static instances don't always play nice with process termination:
+     * Problem with atexit handlers:
+     * - When a static instance is created (e.g. meyers singleton at first use) after
+     *   the atexit handler is registered, then by the time the atexit handler runs,
+     *   this static instance has already been destroyed.
+     * - This is not a problem if the static instance is created before the atexit handler
+     *   is registered, but when your library is used by some third party or customer processes,
+     *   you cannot rely on this.
+     * So a singleton type created with this LOAD_TIME parameter provides an alternative:
+     * - The instance is created at first use as usual.
+     * - However, its destruction is deferred until "unload time", when your library is unloaded,
+     *   or if linked statically during process termination, but after static destruction phase.
+     */
     LOAD_TIME
 #endif // ENABLE_LOAD_TIME_SINGLETON
 };
