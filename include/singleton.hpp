@@ -121,15 +121,10 @@ struct LoadTimeSingletonEntry {
     DeleteLoadTimeSingletonFunc m_deleteFunc;
     LoadTimeSingletonEntry* m_next;
 };
-// note to maintainer: all types that have static storage
-// used by load time singletons must be trivially destructible,
-// otherwise they will get destroyed during static destruction phase before "unload" time.
-static_assert(std::is_trivially_destructible_v<LoadTimeSingletonEntry>);
 
 // global stack for load time singletons dtors
 inline std::atomic<LoadTimeSingletonEntry*>& LoadTimeSingletonEntryStack()
 {
-    static_assert(std::is_trivially_destructible_v<std::atomic<LoadTimeSingletonEntry*>>);
     static std::atomic<LoadTimeSingletonEntry*> stack { nullptr };
     return stack;
 }
@@ -233,8 +228,6 @@ private:
     static T* g_pInternal;
     /// used for deleting this singleton
     static LoadTimeSingletonEntry g_entry;
-    // we know scalar types are trivially destructible, but add check for intent
-    static_assert(std::is_trivially_destructible_v<T*>);
 };
 
 template <typename T>
@@ -299,7 +292,10 @@ protected:
 private:
     using Instance = Detail::SingletonInstance<T, type>;
 #if ENABLE_LOAD_TIME_SINGLETON
-    // just here to catch future regressions
+    // note to maintainer: Load time singleton instance must be trivially destructible,
+    // otherwise it (or some of its members) will get destroyed during static destruction
+    // phase before "unload" time.
+    // this remains here to catch future regressions
     static_assert(type != SingletonType::LOAD_TIME || std::is_trivially_destructible_v<Instance>,
         "Load-time singletons must be trivially destructible");
 #endif // ENABLE_LOAD_TIME_SINGLETON
