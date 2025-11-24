@@ -164,7 +164,7 @@ inline void DestroyLoadTimeSingletons()
 #if defined(_MSC_VER)
 // MSVC: Use .CRT$XPU section for late destruction
 typedef void (__cdecl *_PVFV)(void);
-static void __cdecl DeinitializeLoadTimeSingletons()
+inline void __cdecl DeinitializeLoadTimeSingletons()
 {
     DestroyLoadTimeSingletons();
 }
