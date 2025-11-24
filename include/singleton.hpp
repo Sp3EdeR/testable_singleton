@@ -113,7 +113,7 @@ T* const SingletonInstance<T, SingletonType::STATIC>::LOCAL_INSTANCE_ID = reinte
 
 using DeleteLoadTimeSingletonFunc = void (*)();
 struct LoadTimeSingletonEntry {
-    bool m_isValid = true; // To delete or not (to avoid double free between Reset and __attribute__(destructor))
+    bool m_isValid; // To delete or not (to avoid double free between Reset and __attribute__(destructor))
     DeleteLoadTimeSingletonFunc m_deleteFunc;
     LoadTimeSingletonEntry* m_next;
 };
