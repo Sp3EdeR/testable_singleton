@@ -18,7 +18,7 @@
   * `MyClass::Inject()` function to inject a mock implementation into the singleton. It is also
   * possible to reconstruct the Singleton with different constructor arguments by using the
   * `MyClass::Reset()` function.
-  * 
+  *
   * @remark The `Inject()` and `Reset()` functions are NOT thread safe! They should only be used
   *         in test code sections while implementation code is not running on a different thread.
   */
@@ -31,11 +31,11 @@ struct Singleton
     /** @remark The constructor arguments are only used if the instance is not constructed yet.
       */
     template <typename ...Args>
-    static T& Get(Args... args)
+    static T& Get(Args&&... args)
     {
-        std::call_once(g_onceFlag, [](Args... args) {
+        std::call_once(g_onceFlag, [](Args&&... args) {
                 g_instance.Emplace(std::forward<Args>(args)...);
-            }, args...);
+            }, std::forward<Args>(args)...);
         return *static_cast<T*>(g_instance);
     }
 
@@ -72,7 +72,7 @@ private:
         operator T* () { return m_pExtern == LOCAL_INSTANCE_ID ? &GetBuffer() : m_pExtern; }
         /// Constructs the singleton within the local buffer.
         template <typename ...Args>
-        void Emplace(Args... args)
+        void Emplace(Args&&... args)
         {
             this->~Instance();
             new (&GetBuffer()) T(std::forward<Args>(args)...);
@@ -132,18 +132,18 @@ private:
     /// (Re)constructs the internal singleton instance.
     /** If an existing singleton instance was already constructed, it is destroyed. If an external
       * instance was injected, it is overridden with the newly constructed instance.
-      * 
+      *
       * @remark This function is not thread safe. It is intended for tests, not production code.
       */
     template <typename ...Args>
-    static T& Reset(Args... args)
+    static T& Reset(Args&&... args)
     {
         g_onceFlag.Reset();
         return Get(std::forward<Args>(args)...);
     }
 
     /// Injects an external instance into the singleton.
-    /** If an external instance is injected, the `Get()` function 
+    /** If an external instance is injected, the `Get()` function
       * @param object The object is taken without ownership and must be deleted by the caller.
       * @remark If `object` is `nullptr`, it resets the singleton to uninitialized state, and the
       *         next invocation of `Get()` reconstructs the instance.
