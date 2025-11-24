@@ -53,7 +53,8 @@ template <typename T, SingletonType instanceType>
 struct SingletonInstance;
 
 // Static lifetime singleton specialization (default)
-template <typename T> struct SingletonInstance<T, SingletonType::STATIC> {
+template <typename T>
+struct SingletonInstance<T, SingletonType::STATIC> {
     SingletonInstance() noexcept = default;
     SingletonInstance(const SingletonInstance&) = delete;
     ~SingletonInstance()
@@ -66,7 +67,8 @@ template <typename T> struct SingletonInstance<T, SingletonType::STATIC> {
     /// Returns the current instance.
     operator T*() { return m_pExtern == LOCAL_INSTANCE_ID ? &GetBuffer() : m_pExtern; }
     /// Constructs the singleton within the local buffer.
-    template <typename... Args> void Emplace(Args&&... args)
+    template <typename... Args>
+    void Emplace(Args&&... args)
     {
         this->~SingletonInstance();
         new (&GetBuffer()) T(std::forward<Args>(args)...);
@@ -157,11 +159,13 @@ inline void __attribute__((destructor)) DestroyLoadTimeSingletons()
 // Load-time singleton specialization
 // API is compatible with static singleton specialization
 // however it has no custom dtor (as that would violate trivial destructibility)
-template <typename T> struct SingletonInstance<T, SingletonType::LOAD_TIME> {
+template <typename T>
+struct SingletonInstance<T, SingletonType::LOAD_TIME> {
     /// Returns the current instance.
     operator T*() { return m_pExtern == LOCAL_INSTANCE_ID ? g_pInternal : m_pExtern; }
     /// Constructs the singleton on the heap, and pushes its deleter to the unload-time stack.
-    template <typename... Args> void Emplace(Args&&... args)
+    template <typename... Args>
+    void Emplace(Args&&... args)
     {
         Reset();
         CreateInternalInstance(std::forward<Args>(args)...);
@@ -186,7 +190,8 @@ private:
             DestroyInternalInstance();
     }
     // Manage internal instance on heap:
-    template <typename... Args> static void CreateInternalInstance(Args&&... args)
+    template <typename... Args>
+    static void CreateInternalInstance(Args&&... args)
     {
         g_pInternal = new T(std::forward<Args>(args)...);
         g_entry.m_isValid = true;
@@ -212,7 +217,8 @@ private:
 
 template <typename T>
 T* const SingletonInstance<T, SingletonType::LOAD_TIME>::LOCAL_INSTANCE_ID = reinterpret_cast<T*>(0x1);
-template <typename T> T* SingletonInstance<T, SingletonType::LOAD_TIME>::g_pInternal = nullptr;
+template <typename T>
+T* SingletonInstance<T, SingletonType::LOAD_TIME>::g_pInternal = nullptr;
 template <typename T>
 LoadTimeSingletonEntry SingletonInstance<T, SingletonType::LOAD_TIME>::g_entry
     = { false, SingletonInstance<T, SingletonType::LOAD_TIME>::DestroyInternalInstance, nullptr };
