@@ -296,7 +296,8 @@ private:
     // otherwise it (or some of its members) will get destroyed during static destruction
     // phase before "unload" time.
     // this remains here to catch future regressions
-    static_assert(type != SingletonType::LOAD_TIME || std::is_trivially_destructible_v<Instance>,
+    static_assert(type != SingletonType::LOAD_TIME ||
+        std::is_trivially_destructible<Instance>::value,
         "Load-time singletons must be trivially destructible");
 #endif // ENABLE_LOAD_TIME_SINGLETON
 
