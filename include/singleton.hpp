@@ -13,7 +13,7 @@
 #else
 #define ENABLE_LOAD_TIME_SINGLETON 0
 #endif
-#endif
+#endif // ENABLE_LOAD_TIME_SINGLETON
 
 /**
  * @brief Types of singletons
@@ -224,7 +224,7 @@ LoadTimeSingletonEntry SingletonInstance<T, SingletonType::LOAD_TIME>::g_entry
     = { false, SingletonInstance<T, SingletonType::LOAD_TIME>::DestroyInternalInstance, nullptr };
 #endif // ENABLE_LOAD_TIME_SINGLETON
 
-}
+} // namespace Detail
 
 /// Implements the singleton pattern, but makes unit testing easy.
 /** To use the Singleton class normally, inherit from it with the CRTP style, like:
@@ -280,7 +280,7 @@ private:
     // just here to catch future regressions
     static_assert(type != SingletonType::LOAD_TIME || std::is_trivially_destructible_v<Instance>,
         "Load-time singletons must be trivially destructible");
-#endif
+#endif // ENABLE_LOAD_TIME_SINGLETON
 
     Singleton(const Singleton&) = delete;
     Singleton& operator =(const Singleton&) = delete;
