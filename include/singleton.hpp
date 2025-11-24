@@ -279,7 +279,7 @@ struct Singleton
     {
         std::call_once(g_onceFlag, [](Args&&... args) {
                 g_instance.Emplace(std::forward<Args>(args)...);
-            }, args...);
+            }, std::forward<Args>(args)...);
         return *static_cast<T*>(g_instance);
     }
 
