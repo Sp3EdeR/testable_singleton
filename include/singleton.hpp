@@ -92,11 +92,7 @@ private:
     static T& GetBuffer()
     {
         // Static, uninitialized buffer for the singleton's object
-        static union U {
-            T asT;
-            U() { }
-            ~U() { }
-        } buffer;
+        static union U { T asT; U(){} ~U(){} } buffer;
         return buffer.asT;
     }
 };
@@ -162,7 +158,9 @@ inline void __attribute__((destructor)) DestroyLoadTimeSingletons()
 // API is compatible with static singleton specialization
 // however it has no custom dtor (as that would violate trivial destructibility)
 template <typename T> struct SingletonInstance<T, SingletonType::LOAD_TIME> {
+    /// Returns the current instance.
     operator T*() { return m_pExtern == LOCAL_INSTANCE_ID ? g_pInternal : m_pExtern; }
+    /// Constructs the singleton on the heap, and pushes its deleter to the unload-time stack.
     template <typename... Args> void Emplace(Args&&... args)
     {
         Reset();
@@ -170,6 +168,9 @@ template <typename T> struct SingletonInstance<T, SingletonType::LOAD_TIME> {
         RegisterLoadTimeSingleton(&g_entry);
         m_pExtern = LOCAL_INSTANCE_ID;
     }
+    /// Sets an external object as the instance.
+    /** @remark If `ptr` is `nullptr`, this is just reset.
+     */
     void SetExtern(T* ptr)
     {
         Reset();
@@ -180,6 +181,7 @@ private:
     // Swapped the dtor on static instance for a Reset function
     void Reset()
     {
+         // Destroys the locally-initialized instance. Injected ones are ignored (no ownership).
         if (m_pExtern == LOCAL_INSTANCE_ID)
             DestroyInternalInstance();
     }
@@ -195,9 +197,14 @@ private:
         g_entry.m_isValid = false;
     }
 
+    /// A special pointer value to specify that the local buffer is constructed.
     static T* const LOCAL_INSTANCE_ID;
+    /// nullptr if empty; LOCAL_INSTANCE_ID if using internal buffer;
+    /// pointer to external object otherwise.
     T* m_pExtern = nullptr;
+    /// used instead of static buffer
     static T* g_pInternal;
+    /// used for deleting this singleton
     static LoadTimeSingletonEntry g_entry;
     // we know scalar types are trivially destructible, but add check for intent
     static_assert(std::is_trivially_destructible_v<T*>);
@@ -240,9 +247,9 @@ struct Singleton
     /** @remark The constructor arguments are only used if the instance is not constructed yet.
       */
     template <typename ...Args>
-    static T& Get(Args... args)
+    static T& Get(Args&&... args)
     {
-        std::call_once(g_onceFlag, [](Args... args) {
+        std::call_once(g_onceFlag, [](Args&&... args) {
                 g_instance.Emplace(std::forward<Args>(args)...);
             }, args...);
         return *static_cast<T*>(g_instance);
@@ -309,7 +316,7 @@ private:
       * @remark This function is not thread safe. It is intended for tests, not production code.
       */
     template <typename ...Args>
-    static T& Reset(Args... args)
+    static T& Reset(Args&&... args)
     {
         g_onceFlag.Reset();
         return Get(std::forward<Args>(args)...);
@@ -334,3 +341,5 @@ template <typename T, SingletonType type>
 typename Singleton<T, type>::OnceFlag Singleton<T, type>::g_onceFlag;
 template <typename T, SingletonType type>
 typename Singleton<T, type>::Instance Singleton<T, type>::g_instance;
+
+#endif
