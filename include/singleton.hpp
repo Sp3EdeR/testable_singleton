@@ -87,8 +87,16 @@ private:
         void Emplace(Args&&... args)
         {
             this->~Instance();
-            new (&GetBuffer()) T(std::forward<Args>(args)...);
-            m_pExtern = LOCAL_INSTANCE_ID;
+            try
+            {
+                new (&GetBuffer()) T(std::forward<Args>(args)...);
+                m_pExtern = LOCAL_INSTANCE_ID;
+            }
+            catch (...)
+            {
+                m_pExtern = nullptr;
+                throw;
+			}
         }
         /// Sets an external object as the instance.
         /** @remark If `ptr` is `nullptr`, this is just reset.
