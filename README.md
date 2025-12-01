@@ -72,15 +72,14 @@ For more information about its usage, see the documentation within the [include/
 
 # Testing
 
-The singleton has private methods which are designed for testing. These methods are normally inaccessible for production code, which is desired for software stability and quality.
+The singleton has an interface designed for testing only. These interfaces should not be used in production code, because the software stability and quality cannot be guaranteed.
 
-The C++ standard states that during explicit template instantiations accessibility checking is not performed. It is possible to exploit this to gain access to private members. Why should we want to get around the accessibility limitation of private members? Because unit tests often need to be able to introspect objects. In the case of this library, the unsafe testing functionality is only accessible by exploiting this behaviour.
-
-While it is complicated and impractical to write the template code to access private members - which is a good thing - there are multiple libraries designed to gain access to this functionality for unit tests. The following example shows the usage of the `Reset()` and `Inject()` methods through the [access_private library](https://github.com/martong/access_private/) by [Gábor Márton](https://github.com/martong).
+To access the testing interfaces, test code can include the `singleton_test.hpp` file. This provides access for the tests to use the `::testing::SingletonTestApi` class.
+The following example shows the usage of the `::testing::SingletonTestApi<T>::Reconstruct()` and `::testing::SingletonTestApi<T>::Inject()` methods.
 
 ```cpp
 #include <singleton.hpp>
-#include <access_private.hpp>
+#include <singleton_test.hpp>
 
 class MySingleton : public Singleton<MySingleton>
 {
@@ -93,8 +92,6 @@ protected:
 
     virtual int MyFunction();
 };
-ACCESS_PRIVATE_STATIC_FUN(MySingleton, MySingleton&(), Reset);
-ACCESS_PRIVATE_STATIC_FUN(MySingleton, void(MySingleton*), Inject);
 
 int main()
 {
@@ -105,7 +102,7 @@ int main()
     auto realResult1 = instance.MyFunction();
 
     // This reconstructs the singleton instance and returns the same instance as earlier.
-    auto& instance2 = call_private_static::MySingleton::Reset();
+    auto& instance2 = SingletonTestApi<MySingleton>::Reconstruct()
 
     // This returns the real implementation's result from the fresh instance.
     auto realResult2 = instance.MyFunction();
@@ -119,7 +116,7 @@ int main()
 
     // This injects the mock implementation.
     // The real instance is destroyed, the `instance` and `instance2` variables are invalidated.
-    call_private_static::MySingleton::Inject(&mock);
+    SingletonTestApi<MySingleton>::Inject(&mock);
 
     // This returns the mock implementation.
     auto& instance3 = MySingleton::Get();
@@ -128,20 +125,10 @@ int main()
 }
 ```
 
-> [!TIP]
-> When the Singleton has a non-trivial constructor, and the `Reset` function is accessed, then each parameter type must be an r-value reference. For example if `MySingleton`'s constructor is:
->
-> ```.cpp
-> MySingleton::MySingleton(FooType arg1, BarType&& arg2);
-> ```
->
-> Then the `Reset` function's signature is:
->
-> ```.cpp
-> MySingleton& MySingleton::Reset(FooType&&, BarType&&);
-> ```
-
 > [!NOTE]
 > To be able to properly use the `Inject` function, the production code should not cache a reference or pointer to the returned instance. Otherwise the injected mock doesn't take effect and the real instance is used, which is destroyed. This may cause a crash or an other memory corruption style issue.
 
-For more examples and "requirements", it is recommended to view this library's [test code](blob/main/test/unit/singleton_test.cpp).
+For more examples and behavioral requirements, it is recommended to view this library's [test code](blob/main/test/unit/singleton_test.cpp).
+
+> [!TIP]
+> Earlier versions of this library used the [access_private library](https://github.com/martong/access_private/) by [Gábor Márton](https://github.com/martong) to access the Singleton's testing-only methods through explicit template instantiation's disabled accessibility check. This method is still supported, but it is untested. In version 2.0, the `Reset` method's signature is changed to use universal references, so `&&` must be added after all parameters.

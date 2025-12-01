@@ -18,6 +18,13 @@ if (UNIX)
     target_link_libraries(singleton INTERFACE Threads::Threads)
 endif()
 
+# Documentation generation using Doxygen
+find_package(Doxygen)
+if (DOXYGEN_FOUND)
+    set(DOXYGEN_USE_MDFILE_AS_MAINPAGE "README.md")
+    doxygen_add_docs(doc "README.md" include)
+endif()
+
 # Unit Test.
 if (NOT SINGLETON_SKIP_TEST)
     enable_testing()

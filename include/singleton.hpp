@@ -10,13 +10,13 @@
 
 namespace testing
 {
-	// Forward declaration of the testing interface.
+    // Forward declaration of the testing interface.
     template <typename T>
     struct SingletonTestApi;
 }
 
 /// Implements the singleton pattern, but makes unit testing easy.
-/** To use the Singleton class normally, inherit from it with the CRTP style, like:
+/** To use the Singleton class normally, inherit from it with the [CRTP] style, like:
   *
   * ```cpp
   * class MyClass : public Singleton<MyClass> { impl... };
@@ -24,14 +24,9 @@ namespace testing
   *
   * After this, external code is able to get the `MyClass` instance by using `MyClass::Get()`.
   *
-  * To test your singleton, an access-private library implementation is required, such as
-  * <https://github.com/martong/access_private>. Using the access-private library, invoke the
-  * `MyClass::Inject()` function to inject a mock implementation into the singleton. It is also
-  * possible to reconstruct the Singleton with different constructor arguments by using the
-  * `MyClass::Reset()` function.
-  *
-  * @remark The `Inject()` and `Reset()` functions are NOT thread safe! They should only be used
-  *         in test code sections while implementation code is not running on a different thread.
+  * To test your singleton, use `::testing::SingletonTestApi<T>` from `singleton_test.hpp`.
+  * 
+  * [CRTP]: https://en.cppreference.com/w/cpp/language/crtp.html
   */
 template <typename T>
 struct Singleton
@@ -42,7 +37,7 @@ struct Singleton
     /// Returns the instance of the class.
     /** @remark The constructor arguments are only used if the instance is not constructed yet.
                 On subsequent calls, get may be called without arguments. Use `TryGet()` instead to
-				check if the instance is already constructed.
+                check if the instance is already constructed.
       */
     template <typename ...Args>
     static T& Get(Args&&... args)
@@ -59,6 +54,7 @@ struct Singleton
       */
     static T* TryGet() noexcept
     {
+        // NOTE: Thread safety here assumes that pointers can be read/written atomically.
         return g_instance;
     }
 
@@ -73,7 +69,7 @@ private:
     {
         Instance() noexcept = default;
         Instance(const Instance&) = delete;
-		~Instance()
+        ~Instance()
         {
             // Destroys the locally-initialized instance. Injected ones are ignored (no ownership).
             if (m_pExtern == LOCAL_INSTANCE_ID)
@@ -81,7 +77,11 @@ private:
         }
         Instance& operator =(const Instance&) = delete;
         /// Returns the current instance.
-        operator T* () noexcept { return m_pExtern == LOCAL_INSTANCE_ID ? &GetBuffer() : m_pExtern; }
+        operator T* () noexcept
+        {
+            // m_pExtern is used only by test code, so thread safety is not a concern here.
+            return m_pExtern == LOCAL_INSTANCE_ID ? &GetBuffer() : m_pExtern;
+        }
         /// Constructs the singleton within the local buffer.
         template <typename ...Args>
         void Emplace(Args&&... args)
@@ -96,7 +96,7 @@ private:
             {
                 m_pExtern = nullptr;
                 throw;
-			}
+            }
         }
         /// Sets an external object as the instance.
         /** @remark If `ptr` is `nullptr`, this is just reset.
@@ -149,7 +149,7 @@ private:
         union U { std::once_flag asOnceFlag; U(){} ~U(){} } buffer;
     } g_onceFlag;
 
-	/// Internal function, use the `::testing::SingletonTestApi<T>::Reconstruct()` function instead.
+    /// Internal function, use the `::testing::SingletonTestApi<T>::Reconstruct()` function instead.
     template <typename ...Args>
     static T& Reset(Args&&... args)
     {
@@ -158,7 +158,7 @@ private:
     }
 
     /// Internal function, use the `::testing::SingletonTestApi<T>::Inject()` function instead.
-	static void Inject(T* object)
+    static void Inject(T* object)
     {
         if (object)
             std::call_once(g_onceFlag, []() {});
@@ -176,7 +176,7 @@ private:
         g_instance.Emplace(std::forward<Args>(args)...);
     }
 
-	// The testing interface can access testing-only functions.
+    // The testing interface can access testing-only functions.
     friend struct testing::SingletonTestApi<T>;
 };
 template <typename T>
