@@ -1,8 +1,19 @@
 #ifndef TESTABLE_SINGLETON_INCLUDED_H
 #define TESTABLE_SINGLETON_INCLUDED_H
 
+/** @file
+  * @brief Defines a singleton type. This type can be used in unit tests.
+  */
+
 #include <mutex>
 #include <utility>
+
+namespace testing
+{
+	// Forward declaration of the testing interface.
+    template <typename T>
+    struct SingletonTestApi;
+}
 
 /// Implements the singleton pattern, but makes unit testing easy.
 /** To use the Singleton class normally, inherit from it with the CRTP style, like:
@@ -25,17 +36,18 @@
 template <typename T>
 struct Singleton
 {
+    // The singleton type, usable by the singleton class.
     using BaseType = Singleton<T>;
 
     /// Returns the instance of the class.
     /** @remark The constructor arguments are only used if the instance is not constructed yet.
+                On subsequent calls, get may be called without arguments. Use `TryGet()` instead to
+				check if the instance is already constructed.
       */
     template <typename ...Args>
     static T& Get(Args&&... args)
     {
-        std::call_once(g_onceFlag, [](Args&&... args) {
-                g_instance.Emplace(std::forward<Args>(args)...);
-            }, std::forward<Args>(args)...);
+        std::call_once(g_onceFlag, &EmplaceHelper<Args...>, std::forward<Args>(args)...);
         return *static_cast<T*>(g_instance);
     }
 
@@ -45,7 +57,7 @@ struct Singleton
       *         get an already initialied instance, if it has been initialized already, without
       *         having to specify the arguments.
       */
-    static T* TryGet()
+    static T* TryGet() noexcept
     {
         return g_instance;
     }
@@ -56,12 +68,12 @@ private:
     Singleton(const Singleton&) = delete;
     Singleton& operator =(const Singleton&) = delete;
 
-    /// Holds the instance of T, either locally constructed or injected.
+    /// Holds the instance of `T`, either locally constructed or injected.
     static struct Instance final
     {
         Instance() noexcept = default;
         Instance(const Instance&) = delete;
-        ~Instance()
+		~Instance()
         {
             // Destroys the locally-initialized instance. Injected ones are ignored (no ownership).
             if (m_pExtern == LOCAL_INSTANCE_ID)
@@ -69,7 +81,7 @@ private:
         }
         Instance& operator =(const Instance&) = delete;
         /// Returns the current instance.
-        operator T* () { return m_pExtern == LOCAL_INSTANCE_ID ? &GetBuffer() : m_pExtern; }
+        operator T* () noexcept { return m_pExtern == LOCAL_INSTANCE_ID ? &GetBuffer() : m_pExtern; }
         /// Constructs the singleton within the local buffer.
         template <typename ...Args>
         void Emplace(Args&&... args)
@@ -89,11 +101,11 @@ private:
     private:
         /// A special pointer value to specify that the local buffer is constructed.
         static T* const LOCAL_INSTANCE_ID;
-        /// nullptr if empty; LOCAL_INSTANCE_ID if using internal buffer;
+        /// nullptr if empty; `LOCAL_INSTANCE_ID` if using internal buffer;
         /// pointer to external object otherwise.
         T* m_pExtern = nullptr;
         /// Returns an (uninitialized) internal buffer for storing T.
-        static T& GetBuffer()
+        static T& GetBuffer() noexcept
         {
             // Static, uninitialized buffer for the singleton's object
             static union U { T asT; U(){} ~U(){} } buffer;
@@ -115,13 +127,13 @@ private:
         }
         OnceFlag& operator =(const OnceFlag&) = delete;
         /// Resets the OnceFlag to initial state (allowing another call)
-        void Reset()
+        void Reset() noexcept
         {
             this->~OnceFlag();
             new (this) OnceFlag();
         }
-        /// Returns the internal std::once_flag. May be uninitialized.
-        operator std::once_flag& ()
+        /// Returns the internal `std::once_flag`. May be uninitialized.
+        operator std::once_flag& () noexcept
         {
             return buffer.asOnceFlag;
         }
@@ -129,12 +141,7 @@ private:
         union U { std::once_flag asOnceFlag; U(){} ~U(){} } buffer;
     } g_onceFlag;
 
-    /// (Re)constructs the internal singleton instance.
-    /** If an existing singleton instance was already constructed, it is destroyed. If an external
-      * instance was injected, it is overridden with the newly constructed instance.
-      *
-      * @remark This function is not thread safe. It is intended for tests, not production code.
-      */
+	/// Internal function, use the `::testing::SingletonTestApi<T>::Reconstruct()` function instead.
     template <typename ...Args>
     static T& Reset(Args&&... args)
     {
@@ -142,13 +149,8 @@ private:
         return Get(std::forward<Args>(args)...);
     }
 
-    /// Injects an external instance into the singleton.
-    /** If an external instance is injected, the `Get()` function
-      * @param object The object is taken without ownership and must be deleted by the caller.
-      * @remark If `object` is `nullptr`, it resets the singleton to uninitialized state, and the
-      *         next invocation of `Get()` reconstructs the instance.
-      */
-    static void Inject(T* object)
+    /// Internal function, use the `::testing::SingletonTestApi<T>::Inject()` function instead.
+	static void Inject(T* object)
     {
         if (object)
             std::call_once(g_onceFlag, []() {});
@@ -156,6 +158,18 @@ private:
             g_onceFlag.Reset();
         g_instance.SetExtern(object);
     }
+
+    /// Internal helper for emplacing with perfect forwarding through std::call_once.
+    /** @remark This avoids lambda capture issues with parameter packs in GCC 4.7-4.8.
+      */
+    template <typename ...Args>
+    static void EmplaceHelper(Args&&... args)
+    {
+        g_instance.Emplace(std::forward<Args>(args)...);
+    }
+
+	// The testing interface can access testing-only functions.
+    friend struct testing::SingletonTestApi<T>;
 };
 template <typename T>
 typename Singleton<T>::Instance Singleton<T>::g_instance;
