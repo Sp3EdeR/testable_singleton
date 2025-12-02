@@ -2,12 +2,14 @@
 
 project(singleton VERSION 1.0 LANGUAGES CXX)
 
+include(GNUInstallDirs)
+
 # The library target
 add_library(singleton INTERFACE)
 target_include_directories(
     singleton INTERFACE 
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 target_compile_features(singleton INTERFACE cxx_std_11)
 
@@ -18,6 +20,24 @@ if (UNIX)
     target_link_libraries(singleton INTERFACE Threads::Threads)
 endif()
 
+# Installation of the header and cmake module.
+option(SINGLETON_DO_INSTALL "Enable the installation of the singleton headers" ON)
+if (SINGLETON_DO_INSTALL)
+    # Install the headers
+    install(DIRECTORY "${PROJECT_SOURCE_DIR}/include/" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+    # Install the interface target
+    install(
+        TARGETS singleton
+        EXPORT ${CMAKE_PROJECT_NAME}Config
+    )
+    # Install the export
+    install(
+        EXPORT ${CMAKE_PROJECT_NAME}Config
+        NAMESPACE Singleton::
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${CMAKE_PROJECT_NAME}"
+    )
+endif()
+
 # Documentation generation using Doxygen
 option(SINGLETON_BUILD_DOC "Disable the generation of singleton documentation" ON)
 if (SINGLETON_BUILD_DOC)
@@ -26,6 +46,10 @@ if (SINGLETON_BUILD_DOC)
         set(DOXYGEN_USE_MDFILE_AS_MAINPAGE "README.md")
         set(DOXYGEN_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doc")
         doxygen_add_docs(singleton_doc "README.md" include)
+    endif()
+
+    if (SINGLETON_DO_INSTALL)
+        install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doc/html/" TYPE DOC OPTIONAL)
     endif()
 endif()
 

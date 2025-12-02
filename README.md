@@ -132,3 +132,21 @@ For more examples and behavioral requirements, it is recommended to view this li
 
 > [!TIP]
 > Earlier versions of this library used the [access_private library](https://github.com/martong/access_private/) by [Gábor Márton](https://github.com/martong) to access the Singleton's testing-only methods through explicit template instantiation's disabled accessibility check. This method is still supported, but it is untested. In version 2.0, the `Reset` method's signature is changed to use universal references, so `&&` must be added after all parameters.
+
+# Building with CMake
+
+This library is a header-only library, so there is no need to build it to use it. A CMake build script is provided to facilitate installation, documentation generation, and unit testing. To build the library's resources, follow [the CMake tutorial](https://cmake.org/cmake/help/latest/guide/tutorial/Before%20You%20Begin.html)'s instructions. To build the documentation, run `cmake --build <build-directory> --target singleton_doc`. To install the library, run `cmake --install <build-directory>` after configuring the build system.
+
+## Build Customization
+
+By default, the CMake build script:
+* installs the library's header files to the system include directory,
+  * if the documentation is built, then it is also installed,
+* creates a build target `singleton_doc` to builds the library's documentation, if Doxygen is found on the system,
+* builds and registers its unit test with CTest.
+
+To customize any of these behaviors, the following CMake options can be used:
+* Set the CMake variable SINGLETON_DO_INSTALL=OFF to disable the installation of the library's header files.
+* Set the CMake variable SINGLETON_BUILD_DOC=OFF to disable the documentation build target.
+* Set the CMake variable SINGLETON_BUILD_TESTS=OFF to disable the unit test for this library.
+* Or set the CMake variable BUILD_TESTING=OFF to disable all tests in the CMake build system, including this library's unit test.
