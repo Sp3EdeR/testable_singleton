@@ -19,14 +19,30 @@ if (UNIX)
 endif()
 
 # Documentation generation using Doxygen
-find_package(Doxygen)
-if (DOXYGEN_FOUND)
-    set(DOXYGEN_USE_MDFILE_AS_MAINPAGE "README.md")
-    doxygen_add_docs(doc "README.md" include)
+option(SINGLETON_BUILD_DOC "Disable the generation of singleton documentation" ON)
+if (SINGLETON_BUILD_DOC)
+    find_package(Doxygen)
+    if (DOXYGEN_FOUND)
+        set(DOXYGEN_USE_MDFILE_AS_MAINPAGE "README.md")
+        set(DOXYGEN_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doc")
+        doxygen_add_docs(singleton_doc "README.md" include)
+    endif()
 endif()
 
 # Unit Test.
-if (NOT SINGLETON_SKIP_TEST)
+# Legacy compatibility: SINGLETON_SKIP_TEST overrides and forces tests off.
+if ("${SINGLETON_SKIP_TEST}")
+    cmake_policy(SET CMP0077 NEW)
+    set(BUILD_TESTING OFF)
+endif()
+# Loads the BUILD_TESTING via CTest's inclusion.
+if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+    include(CTest)
+endif()
+# Project-scoped test option to change test building compared to the global BUILD_TESTING.
+option(SINGLETON_BUILD_TESTING "Build the singleton's tests" ${BUILD_TESTING})
+if (SINGLETON_BUILD_TESTING)
+    # If parent did not include CTest, ensure testing is enabled locally.
     enable_testing()
 
     add_executable(
