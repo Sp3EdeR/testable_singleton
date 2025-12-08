@@ -69,10 +69,7 @@ if (SINGLETON_BUILD_TESTING)
     # If parent did not include CTest, ensure testing is enabled locally.
     enable_testing()
 
-    add_executable(
-        singleton_test
-        test/unit/singleton_test.cpp
-    )
+    add_executable(singleton_test test/unit/singleton_test.cpp)
     set_target_properties(
         singleton_test PROPERTIES
         CXX_STANDARD 11 CXX_STANDARD_REQUIRED TRUE
@@ -88,4 +85,15 @@ if (SINGLETON_BUILD_TESTING)
 
     # Register in ctest
     add_test(NAME singleton_test COMMAND "$<TARGET_FILE:singleton_test>")
+
+    # Build examples, and register as tests in ctest
+    add_executable(example_base_usage doc/example_base_usage.cpp)
+    target_link_libraries(example_base_usage singleton)
+    add_test(NAME example_base_usage COMMAND "$<TARGET_FILE:example_base_usage>")
+    add_executable(example_constructor doc/example_constructor.cpp)
+    target_link_libraries(example_constructor singleton)
+    add_test(NAME example_constructor COMMAND "$<TARGET_FILE:example_constructor>")
+    add_executable(example_full_usage doc/example_full_usage.cpp)
+    target_link_libraries(example_full_usage singleton)
+    add_test(NAME example_full_usage COMMAND "$<TARGET_FILE:example_full_usage>")
 endif()

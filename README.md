@@ -10,6 +10,8 @@ A great issue with singletons normally is that they make unit testing very hard.
 To start using this library, include the `singleton.hpp` file into your code, and inherit from the `Singleton` class in your code and get its instance as follows:
 
 ```cpp
+#include <singleton.hpp>
+
 class MySingleton : public Singleton<MySingleton>
 {
 private:
@@ -87,11 +89,17 @@ protected:
     // A protected allows a mock to subclass this.
     MySingleton()
     {
+        ++m_allocCounter;
     }
     friend BaseType;
-
-    virtual int MyFunction();
+    static int m_allocCounter;
+public:
+    virtual int GetAllocCount()
+    {
+        return m_allocCounter;
+    }
 };
+int MySingleton::m_allocCounter = 0;
 
 int main()
 {
@@ -99,27 +107,36 @@ int main()
     auto& instance = MySingleton::Get();
 
     // This returns the real implementation's result.
-    auto realResult1 = instance.MyFunction();
+    if (instance.GetAllocCount() != 1)
+        return 1;
 
     // This reconstructs the singleton instance and returns the same instance as earlier.
-    auto& instance2 = SingletonTestApi<MySingleton>::Reconstruct()
+    auto& instance2 = testing::SingletonTestApi<MySingleton>::Reconstruct();
 
     // This returns the real implementation's result from the fresh instance.
-    auto realResult2 = instance.MyFunction();
+    if (instance.GetAllocCount() != 2 || &instance != &instance2)
+        return 2;
 
     struct MyMockSingleton : public MySingleton
     {
-        // Override the MyFunction behaviour in the mock.
-        virtual int MyFunction() override;
+        // Override the GetAllocCount behaviour in the mock.
+        virtual int GetAllocCount() override
+        {
+            return -1;
+        }
     };
     MyMockSingleton mock;
 
     // This injects the mock implementation.
     // The real instance is destroyed, the `instance` and `instance2` variables are invalidated.
-    SingletonTestApi<MySingleton>::Inject(&mock);
+    testing::SingletonTestApi<MySingleton>::Inject(&mock);
 
     // This returns the mock implementation.
     auto& instance3 = MySingleton::Get();
+
+    // This calls the mocked GetAllocCount() instead of the normal one.
+    if (instance3.GetAllocCount() != -1)
+        return 3;
 
     return 0;
 }
