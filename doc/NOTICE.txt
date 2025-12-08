@@ -1,0 +1,4 @@
+Note to the developers of this project:
+Whenever updating any of the examples in this directory, please ensure that the README.md's links
+to these examples are also updated with the new SHA-1 hash for the git commit. This ensures that
+the README.md on github is updated.

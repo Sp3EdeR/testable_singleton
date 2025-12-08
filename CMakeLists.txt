@@ -39,7 +39,7 @@ if (SINGLETON_DO_INSTALL)
 endif()
 
 # Documentation generation using Doxygen
-option(SINGLETON_BUILD_DOC "Disable the generation of singleton documentation" ON)
+option(SINGLETON_BUILD_DOC "Enable the generation of singleton documentation" ON)
 if (SINGLETON_BUILD_DOC)
     find_package(Doxygen)
     if (DOXYGEN_FOUND)

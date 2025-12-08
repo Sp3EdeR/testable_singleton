@@ -9,66 +9,14 @@ A great issue with singletons normally is that they make unit testing very hard.
 
 To start using this library, include the `singleton.hpp` file into your code, and inherit from the `Singleton` class in your code and get its instance as follows:
 
-```cpp
-#include <singleton.hpp>
+https://github.com/Sp3EdeR/testable_singleton/blob/4d44bd8d98fc9bc18c0ddf1dd2b93ade12beded7/doc/example_base_usage.cpp#L1-L18
 
-class MySingleton : public Singleton<MySingleton>
-{
-private:
-    MySingleton() = default;
-    friend BaseType;
-};
-
-int main()
-{
-    // This returns the constructed singleton.
-    auto& instance = MySingleton::Get();
-
-    // Call functions on `instance` here.
-
-    return 0;
-}
-```
-
-@note It is recommended to define a `private` or `protected` constructor to avoid misuse of the singleton. In this case, the `friend BaseType;` declaration must be added to the body of the class to allow class construction for the singleton.
+> [!NOTE]
+> It is recommended to define a `private` or `protected` constructor to avoid misuse of the singleton. In this case, the `friend BaseType;` declaration must be added to the body of the class to allow class construction for the singleton.
 
 It is also possible to use a non-default constructor for the singleton class. In this case, initialization arguments must be provided to the `Get()` function at every location where the singleton is accessed, or the `TryGet()` function must be used, which does not initialize the singleton.
 
-```cpp
-#include <singleton.hpp>
-
-class MySingleton : public Singleton<MySingleton>
-{
-private:
-    MySingleton(int customArg1, double customArg2)
-    {
-    }
-    friend BaseType;
-};
-
-int main()
-{
-    {
-        // This returns a nullptr, because the singleton is uninitialized.
-        auto instancePtr = MySingleton::TryGet();
-    }
-    {
-        // This returns the constructed singleton.
-        auto& instance = MySingleton::Get(42, 3.1415);
-    }
-    {
-        // This returns a pointer to the initialized singleton.
-        auto instancePtr = MySingleton::TryGet();
-    }
-    {
-        // This returns the same singleton.
-        // The difference in arguments is ignored.
-        auto& instance = MySingleton::Get(42000, -3.1415);
-    }
-
-    return 0;
-}
-```
+https://github.com/Sp3EdeR/testable_singleton/blob/4d44bd8d98fc9bc18c0ddf1dd2b93ade12beded7/doc/example_constructor.cpp#L1-L33
 
 For more information about its usage, see the documentation within the [include/singleton.hpp](blob/main/include/singleton.hpp) file.
 
@@ -79,68 +27,7 @@ The singleton has an interface designed for testing only. These interfaces shoul
 To access the testing interfaces, test code can include the `singleton_test.hpp` file. This provides access for the tests to use the `::testing::SingletonTestApi` class.
 The following example shows the usage of the `::testing::SingletonTestApi<T>::Reconstruct()` and `::testing::SingletonTestApi<T>::Inject()` methods.
 
-```cpp
-#include <singleton.hpp>
-#include <singleton_test.hpp>
-
-class MySingleton : public Singleton<MySingleton>
-{
-protected:
-    // A protected allows a mock to subclass this.
-    MySingleton()
-    {
-        ++m_allocCounter;
-    }
-    friend BaseType;
-    static int m_allocCounter;
-public:
-    virtual int GetAllocCount()
-    {
-        return m_allocCounter;
-    }
-};
-int MySingleton::m_allocCounter = 0;
-
-int main()
-{
-    // This returns the constructed singleton.
-    auto& instance = MySingleton::Get();
-
-    // This returns the real implementation's result.
-    if (instance.GetAllocCount() != 1)
-        return 1;
-
-    // This reconstructs the singleton instance and returns the same instance as earlier.
-    auto& instance2 = testing::SingletonTestApi<MySingleton>::Reconstruct();
-
-    // This returns the real implementation's result from the fresh instance.
-    if (instance.GetAllocCount() != 2 || &instance != &instance2)
-        return 2;
-
-    struct MyMockSingleton : public MySingleton
-    {
-        // Override the GetAllocCount behaviour in the mock.
-        virtual int GetAllocCount() override
-        {
-            return -1;
-        }
-    };
-    MyMockSingleton mock;
-
-    // This injects the mock implementation.
-    // The real instance is destroyed, the `instance` and `instance2` variables are invalidated.
-    testing::SingletonTestApi<MySingleton>::Inject(&mock);
-
-    // This returns the mock implementation.
-    auto& instance3 = MySingleton::Get();
-
-    // This calls the mocked GetAllocCount() instead of the normal one.
-    if (instance3.GetAllocCount() != -1)
-        return 3;
-
-    return 0;
-}
-```
+https://github.com/Sp3EdeR/testable_singleton/blob/4d44bd8d98fc9bc18c0ddf1dd2b93ade12beded7/doc/example_full_usage.cpp#L1-L60
 
 > [!NOTE]
 > To be able to properly use the `Inject` function, the production code should not cache a reference or pointer to the returned instance. Otherwise the injected mock doesn't take effect and the real instance is used, which is destroyed. This may cause a crash or an other memory corruption style issue.

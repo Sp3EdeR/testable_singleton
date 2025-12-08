@@ -37,8 +37,10 @@ struct Singleton
 
     /// Returns the instance of the class.
     /** @remark The constructor arguments are only used if the instance is not constructed yet.
-                On subsequent calls, get may be called without arguments. Use `TryGet()` instead to
-                check if the instance is already constructed.
+      *         On subsequent calls, get may be called without arguments. Use `TryGet()` instead to
+      *         check if the instance is already constructed.
+      * @remark The singleton instance returned by this function should not be cached, because when
+      *         using Inject in tests, the instance may change.
       */
     template <typename ...Args>
     static T& Get(Args&&... args)
@@ -52,6 +54,8 @@ struct Singleton
       * @remark This can be useful for singletons that have custom constructor arguments. Code can
       *         get an already initialied instance, if it has been initialized already, without
       *         having to specify the arguments.
+      * @remark The singleton instance returned by this function should not be cached, because when
+      *         using Inject in tests, the instance may change.
       */
     static T* TryGet() noexcept
     {

@@ -8,8 +8,7 @@
   * This interface bypasses the singleton's encapsulation and exposes functions intended for
   * unit testing only.
   *
-  * The unit test code should be added to the `::testing` namespace, from which the provided
-  * interfaces are directly usable.
+  * See `singleton_test.cpp` for an example of using this interface.
   */
 
 #include "singleton.hpp"
