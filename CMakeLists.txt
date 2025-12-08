@@ -77,10 +77,7 @@ if (SINGLETON_BUILD_TESTING)
         singleton_test PROPERTIES
         CXX_STANDARD 11 CXX_STANDARD_REQUIRED TRUE
     )
-  
-    # Use access_private for the unit test
-    target_include_directories(singleton_test PRIVATE test/thirdparty/access_private/include)
-  
+
     # Use Google Test framework for the unit test
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
     add_subdirectory(test/thirdparty/googletest EXCLUDE_FROM_ALL)
