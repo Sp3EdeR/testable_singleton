@@ -3,7 +3,8 @@
 name: testable_singleton unit tests
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
+    tags: [ '**' ]
   pull_request:
   workflow_dispatch: # Manual execution
 jobs:
