@@ -2,6 +2,7 @@
 #define TESTABLE_SINGLETON_INCLUDED_H
 
 #include <mutex>
+#include <new>
 #include <utility>
 
 /// Implements the singleton pattern, but makes unit testing easy.
