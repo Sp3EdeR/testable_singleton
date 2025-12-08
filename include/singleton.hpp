@@ -6,6 +6,7 @@
   */
 
 #include <mutex>
+#include <new>
 #include <utility>
 
 namespace testing
