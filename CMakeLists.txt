@@ -79,6 +79,9 @@ if (SINGLETON_BUILD_TESTING)
     )
 
     # Use Google Test framework for the unit test
+    if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/test/thirdparty/googletest/CMakeLists.txt")
+        message(FATAL_ERROR "Google Test submodule not found. Please run 'git submodule update --init --recursive'")
+    endif()
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
     add_subdirectory(test/thirdparty/googletest EXCLUDE_FROM_ALL)
     target_link_libraries(singleton_test gtest_main gmock)
