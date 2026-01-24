@@ -64,9 +64,7 @@ private:
         Instance(const Instance&) = delete;
         ~Instance()
         {
-            // Destroys the locally-initialized instance. Injected ones are ignored (no ownership).
-            if (m_pExtern == LOCAL_INSTANCE_ID)
-                GetBuffer().~T();
+            DestroyLocalInstance();
         }
         Instance& operator =(const Instance&) = delete;
         /// Returns the current instance.
@@ -75,7 +73,7 @@ private:
         template <typename ...Args>
         void Emplace(Args... args)
         {
-            this->~Instance();
+            DestroyLocalInstance();
             new (&GetBuffer()) T(std::forward<Args>(args)...);
             m_pExtern = LOCAL_INSTANCE_ID;
         }
@@ -84,7 +82,7 @@ private:
           */
         void SetExtern(T* ptr)
         {
-            this->~Instance();
+            DestroyLocalInstance();
             m_pExtern = ptr;
         }
     private:
@@ -99,6 +97,13 @@ private:
             // Static, uninitialized buffer for the singleton's object
             static union U { T asT; U(){} ~U(){} } buffer;
             return buffer.asT;
+        }
+        /// Destroys the local instance, while ignoring injected ones (no ownership).
+        /** @remark This leaves the object in an inconsistent state. m_pExtern must be changed. */
+        void DestroyLocalInstance()
+        {
+            if (m_pExtern == LOCAL_INSTANCE_ID)
+                GetBuffer().~T();
         }
     } g_instance;
 
